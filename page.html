@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>santa spi</title>
+<style>
+.log {
+    font-size: 6px !important;
+    font-family: Menlo, monospace;
+}
+     input[type="text"],
+select,
+textarea {
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  margin-top: 6px;
+  margin-bottom: 10px;
+}
+
+input[type="submit"] {
+  border: none;
+  background: #4aaaa5;
+  padding: 12px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #ffffff;
+  font-size: 16px;
+}
+</style>
+</head>
+<body>
+  <p>Santa SPI is coming tonight</p>
+  <textarea placeholder="use hex bytes without leading 0x: 46 23 4b ce" type="text" id="inputField"></textarea>
+  <button id="submitButton">Send</button>
+  <div id="messages"></div>
+  <script>
+    const socket = new WebSocket('ws://localhost:3333');
+
+    // Event listener for WebSocket connection open
+    socket.addEventListener('open', () => {
+      console.log('Connected to WebSocket server.');
+    });
+
+    // Event listener for incoming messages
+    socket.addEventListener('message', async (event) => {
+      const messagesDiv = document.getElementById('messages');
+      div = document.createElement("div");
+      if (event.data instanceof Blob) {	  
+	  text = await event.data.text();
+      } else {
+          text = event.data.toString();
+      }
+      div.innerHTML = text;
+      div.classList.add("log");
+      messagesDiv.insertBefore(div, messagesDiv.firstChild);
+    });
+
+    // Function to send messages
+    document.getElementById('submitButton').addEventListener('click', () => {
+        const userInput = document.getElementById('inputField').value;
+        const submitButton = document.getElementById('submitButton');
+	submitButton.disabled = true;
+        fetch("/spi", {
+		method: 'POST',
+		body: userInput
+	})
+	.then(response => {
+		if(!response.ok) {
+	           alert(response.status);
+		} else {
+		   console.log(response);
+		}
+		submitButton.disabled = false;
+	})
+	.catch(error => {
+	    alert(error);
+	});
+    });
+	
+    function sendMessage() {
+      const messageInput = document.getElementById('messageInput');
+      const message = messageInput.value;
+      socket.send(message);
+      messageInput.value = '';
+    }
+  </script>
+</body>
+</html>
