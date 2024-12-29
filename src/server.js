@@ -10,22 +10,14 @@ const childproc = require('child_process');
 // express
 const express = require('express');
 const path = require('path');
-const WebSocket = require('ws');
+const ws = require('ws');
 const bodyParser = require('body-parser')
 
 const app = express();
 app.use(bodyParser.text());
-const wss = new WebSocket.Server({ port: 3333 });
+const wss = new ws.Server({noServer: true}); //new WebSocket.Server({ port: 3030 });
 
-/*
-function background() {
-    setTimeout(() => {
-        console.log('awake');
-        trace_pipe();
-        background();
-    }, 1000)
-}
-//background();
+
 
 /*let i = 0;
 setInterval(() => {
@@ -55,8 +47,6 @@ wss.on('connection', (ws) => {
   });
 });
 
-
-
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'page.html'));
 });
@@ -75,14 +65,14 @@ app.post('/spi', async (req, res) => {
     // slow down
     await new Promise( resolve => setTimeout(resolve, 1500));
 
-    var spiwrite = childproc.exec('cat', []);
+    var spiwrite = childproc.exec('./spiwrite', []);
     spiwrite.stdin.write(buf);
     spiwrite.stdin.end();
     await new Promise( (resolve) => {
         spiwrite.on('close', resolve)
     });
 
-    var pid = 999; // TODO
+    var pid = spiwrite.pid; // TODO
     response = {
         received: input,
         parsed: buf,
@@ -91,10 +81,26 @@ app.post('/spi', async (req, res) => {
     return res.json(response)
 })
 
+app.get('/treepic', (req, res) => {
+    res.sendFile('/tmp/treepic.jpg');
+});
+
+function background() {
+    setTimeout( async () => {
+        console.log('treepic');
+        var treepic = childproc.exec('ffmpeg -y -f video4linux2 -s 640x480 -i /dev/video0 -ss 0:0:0 -frames 1 /tmp/treepic.jpg');
+        await new Promise( (resolve) => {
+            treepic.on('close', resolve)
+        });
+        background();
+    }, 3000)
+}
+background();
+
 // Start the server
 const port = 3000;
 app.listen(port, () => {
-  console.log(`Server started on http://localhost:${port}`);
+  console.log(`Server started on http://0.0.0.0:${port}`);
 });
 
 

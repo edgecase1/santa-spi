@@ -30,12 +30,13 @@ input[type="submit"] {
 </style>
 </head>
 <body>
-  <p>Santa SPI is coming tonight</p>
+  <p><b>Santa SPI is coming tonight</b>&#127876;</p>
+  <p>You can place hex values (f0 0d without 0x) in the textbox and press send. The data is posted to the service. The service runs in a container on an ARM platform. Only a spidev and the webcam is exposed in the container. The posted data is written as is to the SPI bus. You can observe the results on the SPI tracepoints below (received by a Websocket) and the <a href="/treepic" width=640 target="_blank">live tree on the webcam</a>. The goal is to turn all 50 LEDs on this <a href="https://cdn-shop.adafruit.com/datasheets/WS2811.pdf">WS2811</a> fairy lights to red.
   <textarea placeholder="use hex bytes without leading 0x: 46 23 4b ce" type="text" id="inputField"></textarea>
   <button id="submitButton">Send</button>
   <div id="messages"></div>
   <script>
-    const socket = new WebSocket('ws://localhost:3333');
+    const socket = new WebSocket('ws://'+location.hostname+':3030');
 
     // Event listener for WebSocket connection open
     socket.addEventListener('open', () => {
