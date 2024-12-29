@@ -8,6 +8,7 @@ const readline = require('readline');
 const childproc = require('child_process');
 
 // express
+const http = require('http');
 const express = require('express');
 const path = require('path');
 const ws = require('ws');
@@ -15,8 +16,6 @@ const bodyParser = require('body-parser')
 
 const app = express();
 app.use(bodyParser.text());
-const wss = new ws.Server({noServer: true}); //new WebSocket.Server({ port: 3030 });
-
 
 
 /*let i = 0;
@@ -24,9 +23,12 @@ setInterval(() => {
     console.log('Infinite Loop Test interval n:', i++);
 }, 2000)
 */
+const port = 3000;
+const httpServer = http.createServer(app);
 
 // WebSocket event handling
-wss.on('connection', (ws) => {
+const wsServer = new ws.WebSocketServer({server: httpServer}); //new WebSocket.Server({ port: 3030 });
+wsServer.on('connection', (ws) => {
   console.log('new client connected.');
 
   // Event listener for incoming messages
@@ -34,7 +36,7 @@ wss.on('connection', (ws) => {
     console.log('Received message:', message.toString());
 
     // Broadcast the message to all connected clients
-    wss.clients.forEach((client) => {
+    wsServer.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(message.toString());
       }
@@ -98,23 +100,21 @@ function background() {
 background();
 
 // Start the server
-const port = 3000;
-app.listen(port, () => {
-  console.log(`Server started on http://0.0.0.0:${port}`);
-});
+
+httpServer.listen(port); //() => { console.log(`Server started on http://0.0.0.0:${port}`);});
 
 
 (async function processLineByLine() {
   try {
     const rl = readline.createInterface({
-      input: fs.createReadStream('pipe1'),
+      input: fs.createReadStream('trace_pipe'),
       crlfDelay: Infinity
     });
 
     rl.on('line', (line) => {
       process.stdout.write(".");
-      wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
+      wsServer.clients.forEach((client) => {
+        if (client.readyState === ws.WebSocket.OPEN) {
           client.send(line);
         }
       });

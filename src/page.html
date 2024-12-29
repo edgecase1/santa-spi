@@ -36,7 +36,7 @@ input[type="submit"] {
   <button id="submitButton">Send</button>
   <div id="messages"></div>
   <script>
-    const socket = new WebSocket('ws://'+location.hostname+':3030');
+    const socket = new WebSocket('ws://'+location.hostname+':3000');
 
     // Event listener for WebSocket connection open
     socket.addEventListener('open', () => {
