@@ -72,7 +72,7 @@ int spi_transfer(uint8_t *buf)
         memset(&tr, 0, sizeof(struct spi_ioc_transfer));
         tr.tx_buf = buf;
         tr.rx_buf = 0;
-        tr.len = 450; 
+        tr.len = 1200; 
         if( ioctl(spi_fd, SPI_IOC_MESSAGE(1), &tr) < 1) {
             fprintf(stderr, "Can't send spi message");
             return -1;
@@ -84,7 +84,7 @@ int spi_transfer(uint8_t *buf)
 
 int main (int argc, char** argv)
 {
-    uint8_t buf[450];
+    uint8_t buf[1200];
     memset(buf, 0, sizeof(buf));
 
     /*
@@ -98,7 +98,7 @@ int main (int argc, char** argv)
     }
     */
 
-    int count = fgets(buf, 450, stdin);
+    int count = fread(buf, 1, 1200, stdin);
     if(! count) {
 	fprintf(stderr, "need bytes from stdin");
 	return -1;
