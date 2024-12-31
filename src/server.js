@@ -15,6 +15,7 @@ const ws = require('ws');
 const bodyParser = require('body-parser')
 
 const app = express();
+//app.use(bodyParser.text({limit: '32000'}));
 app.use(bodyParser.text());
 
 

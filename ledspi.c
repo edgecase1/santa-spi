@@ -62,42 +62,30 @@ int init_spi()
     // except driver_mode, spi_fd and max_count (already defined when spi_init called)
 }
 
-int getbuf(char* buf)
-{
-    // 93-49-24-92-49-24-92-49-24
-    buf = malloc(50*9);
-    char src[9] = { 0x93, 0x49, 0x24, 0x92, 0x49, 0x24, 0x92, 0x49, 0x24 };
-    for(int i=0;i<50;i++)
-    {
-	memcpy(buf[i*9], &src, 9);
-    }
-
-    return 50*9;
-}
-
 int spi_transfer(uint8_t *buf)
 {
     struct spi_ioc_transfer tr;
-    const int count = 50;
 
-    for(int led_index = 0; led_index < count ; led_index++)
-    {
+    //const int count = 50;
+    //for(int led_index = 0; led_index < count ; led_index++)
+    //{
         memset(&tr, 0, sizeof(struct spi_ioc_transfer));
         tr.tx_buf = buf;
         tr.rx_buf = 0;
-        tr.len = 24; 
+        tr.len = 450; 
         if( ioctl(spi_fd, SPI_IOC_MESSAGE(1), &tr) < 1) {
             fprintf(stderr, "Can't send spi message");
             return -1;
         }
-    }
+    //}
 
     return -1;
 }
 
 int main (int argc, char** argv)
 {
-    uint8_t buf[24];
+    uint8_t buf[450];
+    memset(buf, 0, sizeof(buf));
 
     /*
     const int red = 0xff; const int blue = 0x00; const int green = 0x00;
@@ -110,9 +98,9 @@ int main (int argc, char** argv)
     }
     */
 
-    int count = fgets(buf, 24, stdin);
+    int count = fgets(buf, 450, stdin);
     if(! count) {
-	fprintf(stderr, "need 24 bytes");
+	fprintf(stderr, "need bytes from stdin");
 	return -1;
     }
 
