@@ -22,6 +22,13 @@ typedef uint32_t ws2811_led_t;                   //< 0xWWRRGGBB
 
 int spi_fd;
 
+FILE* error_file;
+
+void error(const char *str)
+{
+    fprintf(error_file, "%s\n", str); 
+}
+
 int init_spi()
 {
     static uint8_t mode;
@@ -30,39 +37,45 @@ int init_spi()
 
     spi_fd = open("/dev/spidev0.0", O_RDWR);
     if (spi_fd < 0) {
+	error("error opeing /dev/spidev0.0");
         return -1;
     }
     //device->spi_fd = spi_fd;
 
     // SPI mode
     if (ioctl(spi_fd, SPI_IOC_WR_MODE, &mode) < 0) {
+	error("error writemode");
         return -1;
     }
     if (ioctl(spi_fd, SPI_IOC_RD_MODE, &mode) < 0) {
+	error("error readmode");
         return -1;
     }
 
     // Bits per word
     if (ioctl(spi_fd, SPI_IOC_WR_BITS_PER_WORD, &bits) < 0) {
+	error("error bits per word write");
         return -1;
     }
     if (ioctl(spi_fd, SPI_IOC_RD_BITS_PER_WORD, &bits) < 0) {
+	error("error bits per word read");
         return -1;
     }
 
     // Max speed Hz
     if (ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed) < 0) {
+	error("error max speed write");
         return -1;
     }
     if (ioctl(spi_fd, SPI_IOC_RD_MAX_SPEED_HZ, &speed) < 0) {
+	error("error max speed write");
         return -1;
     }
-
     // Initialize device structure elements to not used
     // except driver_mode, spi_fd and max_count (already defined when spi_init called)
 }
 
-int spi_transfer(uint8_t *buf)
+int spi_transfer(char *buf)
 {
     struct spi_ioc_transfer tr;
 
@@ -70,11 +83,11 @@ int spi_transfer(uint8_t *buf)
     //for(int led_index = 0; led_index < count ; led_index++)
     //{
         memset(&tr, 0, sizeof(struct spi_ioc_transfer));
-        tr.tx_buf = buf;
+        tr.tx_buf = (long long unsigned int)buf;
         tr.rx_buf = 0;
         tr.len = 1200; 
         if( ioctl(spi_fd, SPI_IOC_MESSAGE(1), &tr) < 1) {
-            fprintf(stderr, "Can't send spi message");
+            error("Can't send spi message");
             return -1;
         }
     //}
@@ -84,7 +97,16 @@ int spi_transfer(uint8_t *buf)
 
 int main (int argc, char** argv)
 {
-    uint8_t buf[1200];
+    char *buf;
+    error_file = fopen("spiwrite.log", "w");
+    buf = (char *)malloc(1200);
+
+    if(!freopen(NULL, "rb", stdin))
+    {
+	error("freopen stdin");
+	exit(1);
+    }
+
     memset(buf, 0, sizeof(buf));
 
     /*
@@ -100,12 +122,14 @@ int main (int argc, char** argv)
 
     int count = fread(buf, 1, 1200, stdin);
     if(! count) {
-	fprintf(stderr, "need bytes from stdin");
+	error("need bytes from stdin");
 	return -1;
     }
 
     init_spi();
-    spi_transfer(&buf); 
+    spi_transfer(buf); 
+    free(buf);
     usleep(1000000 / 15);
     close(spi_fd);
+    fclose(error_file);
 }
