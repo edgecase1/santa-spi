@@ -27,7 +27,9 @@ FILE* error_file;
 void error(const char *str)
 {
     fprintf(error_file, "%s\n", str); 
+    exit(1);
 }
+
 
 int init_spi()
 {
@@ -37,38 +39,38 @@ int init_spi()
 
     spi_fd = open("/dev/spidev0.0", O_RDWR);
     if (spi_fd < 0) {
-	error("error opeing /dev/spidev0.0");
+	fprintf(error_file, "error opeing /dev/spidev0.0\n");
         return -1;
     }
     //device->spi_fd = spi_fd;
 
     // SPI mode
     if (ioctl(spi_fd, SPI_IOC_WR_MODE, &mode) < 0) {
-	error("error writemode");
+	fprintf(error_file, "error writemode\n");
         return -1;
     }
     if (ioctl(spi_fd, SPI_IOC_RD_MODE, &mode) < 0) {
-	error("error readmode");
+	fprintf(error_file, "error readmode\n");
         return -1;
     }
 
     // Bits per word
     if (ioctl(spi_fd, SPI_IOC_WR_BITS_PER_WORD, &bits) < 0) {
-	error("error bits per word write");
+	fprintf(error_file, "error bits per word write\n");
         return -1;
     }
     if (ioctl(spi_fd, SPI_IOC_RD_BITS_PER_WORD, &bits) < 0) {
-	error("error bits per word read");
+	fprintf(error_file, "error bits per word read\n");
         return -1;
     }
 
     // Max speed Hz
     if (ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed) < 0) {
-	error("error max speed write");
+	fprintf(error_file, "error max speed write\n");
         return -1;
     }
     if (ioctl(spi_fd, SPI_IOC_RD_MAX_SPEED_HZ, &speed) < 0) {
-	error("error max speed write");
+	fprintf(error_file, "error max speed write\n");
         return -1;
     }
     // Initialize device structure elements to not used
@@ -87,7 +89,7 @@ int spi_transfer(char *buf)
         tr.rx_buf = 0;
         tr.len = 1200; 
         if( ioctl(spi_fd, SPI_IOC_MESSAGE(1), &tr) < 1) {
-            error("Can't send spi message");
+            fprintf(error_file, "Can't send spi message\n");
             return -1;
         }
     //}
@@ -95,19 +97,32 @@ int spi_transfer(char *buf)
     return -1;
 }
 
+void print_buf(char* buf)
+{
+    char output[(1200 * 3) + 1];
+    /* pointer to the first item (0 index) of the output array */
+    char *ptr = &output[0];
+    int i;
+    for (i = 0; i < 1200; i++) {
+        ptr += sprintf(ptr, "%02X ", buf[i]);
+    }
+    
+    printf("%s\n", output);
+    fprintf(error_file, "%s\n", output);
+}
+
 int main (int argc, char** argv)
 {
     char *buf;
-    error_file = fopen("spiwrite.log", "w");
+    error_file = fopen("spiwrite.log", "a");
     buf = (char *)malloc(1200);
 
     if(!freopen(NULL, "rb", stdin))
     {
 	error("freopen stdin");
-	exit(1);
     }
 
-    memset(buf, 0, sizeof(buf));
+    memset(buf, 0, 1200);
 
     /*
     const int red = 0xff; const int blue = 0x00; const int green = 0x00;
@@ -121,10 +136,12 @@ int main (int argc, char** argv)
     */
 
     int count = fread(buf, 1, 1200, stdin);
-    if(! count) {
+    if(count <= 0) {
 	error("need bytes from stdin");
-	return -1;
+    } else {
+        fprintf(error_file, "read %d bytes from stdin\n", count); 
     }
+    print_buf(buf);
 
     init_spi();
     spi_transfer(buf); 
