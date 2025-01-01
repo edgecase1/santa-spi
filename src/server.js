@@ -54,6 +54,27 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'page.html'));
 });
 
+
+async function spi(buf) {
+    var spiwrite = childproc.spawn('./spiwrite', []);
+    var output = "";
+    return new Promise((resolve, reject) => {
+	spiwrite.stdout.on('data', (data) => {
+            console.log(`Output from spiwrite: ${data.toString()}`);
+	    output += data;
+        });
+	spiwrite.stderr.on('data', (data) => {
+            console.error(`Error from spiwrite: ${data.toString()}`);
+        });
+        spiwrite.on('close', (code) => {
+	    pid = spiwrite.pid;
+            resolve({ code: code, pid: pid, output: output });
+        });
+	spiwrite.stdin.write(buf);
+        spiwrite.stdin.end();
+    });
+}
+
 app.post('/spi', async (req, res) => {
     input = req.body;
     if (Object.keys(req.body).length === 0) {
@@ -68,20 +89,8 @@ app.post('/spi', async (req, res) => {
     // slow down
     await new Promise( resolve => setTimeout(resolve, 1500));
 
-    var spiwrite = childproc.exec('./spiwrite', []);
-    spiwrite.stdin.write(buf);
-    spiwrite.stdin.end();
-    await new Promise( (resolve) => {
-        spiwrite.on('close', resolve)
-    });
-
-    var pid = spiwrite.pid; // TODO
-    response = {
-        received: input,
-        parsed: buf,
-        pid: pid
-    }
-    return res.json(response)
+    var result = await spi(buf);
+    return res.json(result);
 })
 
 app.get('/treepic', (req, res) => {

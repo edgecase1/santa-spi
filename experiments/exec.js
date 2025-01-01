@@ -7,9 +7,7 @@ async function start() {
     var buf = fs.readFileSync('red_green');
     console.log(buf);
     
-    var spiwrite = childproc.exec('./spiwrite', (error) => {
-	    console.error(error);
-    });
+    var spiwrite = childproc.spawn('./spiwrite');
 
     await new Promise( (resolve) => {
         spiwrite.on('close', resolve)
